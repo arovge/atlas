@@ -1,34 +1,28 @@
 from bs4 import BeautifulSoup
-from selenium import webdriver
-from selenium.webdriver.chrome.options import Options
+from browser import CatalogBrowser
 
-# headless browser
-def get_page():
-    url = 'https://catalog.msoe.edu/content.php?catoid=20&navoid=557'
-    options = Options()
-    options.add_argument('headless')
-    driver = webdriver.Chrome(options=options)
-    driver.get(url)
-    return driver.page_source
-
-# parsing stuff
-def get_link_list(page):
+def find_nested_rows(page):
     soup = BeautifulSoup(page, 'html.parser')
     table_body = soup.find('table', class_='table_default').find('tbody')
     rows = table_body.find('tr', { 'role': 'main' })
     cells = rows.find('td', class_='block_n2_and_content')
-    nested_table = cells.find_all('table', class_='table_default')[-1]
-    nested_cell = nested_table.find_all('tr')[-1]
-    links = nested_cell.find_all('a')
-    link_list = map(lambda link : 'https://catalog.msoe.edu' + link['href'], links)
-    return link_list
+    nested_table = cells.find_all('table', class_='table_default')
+    print(nested_table)
+    return nested_table
+
+def process_page(browser, link):
+    page = browser.get_page(link)
+    nested_rows = browser.find_nested_rows(page)
+    for row in nested_rows:
+        course = row.find_all('td', class_='width')
+        if course:
+            print(course[0].find('a'))
 
 def main():
-    page = get_page()
-    link_list = get_link_list(page)
+    browser = CatalogBrowser()
+    link_list = browser.link_list
     for link in link_list:
-        print(link)
-
+        process_page(browser, link)
 
 if __name__ == '__main__':
     main()
